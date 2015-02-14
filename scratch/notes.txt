@@ -1,0 +1,27 @@
+
+Scene
+
+Mesh
+	new mesh(name,scene);
+	
+VertextData
+	applyToMesh(mesh)
+	
+	
+MovUnit
+
+World
+
+Physics
+	
+Renderor
+
+1.在场景中显示一个盒子
+	不用模型，直接创建
+	需要有阴影。
+	摄像机要控制视角，别太头晕
+	需要画线，表示力
+	
+
+2.盒子加上物理，可以掉落到地面
+	怎么创建长方体	

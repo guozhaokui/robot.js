@@ -1,14 +1,14 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
         <title>Babylon.js sample code</title>
         <!-- Babylon.js -->
-        <script src="http://www.babylonjs.com/hand.minified-1.2.js"></script>
-        <script src="http://www.babylonjs.com/cannon.js"></script>
-        <script src="http://www.babylonjs.com/oimo.js"></script>
-        <script src="http://www.babylonjs.com/babylon.js"></script>
+        <script src="babylon.js/hand.minified-1.2.js"></script>
+        <script src="babylon.js/cannon.js"></script>
+        <script src="babylon.js/oimo.js"></script>
+        <script src="babylon.js/babylon.js"></script>
         <style>
             html, body {
                 overflow: hidden;
@@ -32,41 +32,74 @@
         var engine = new BABYLON.Engine(canvas, true);
 
         var createScene = function () {
-        
-            // This creates a basic Babylon Scene object (non-mesh)
             var scene = new BABYLON.Scene(engine);
         
-            // This creates and positions a free camera (non-mesh)
             var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
-        
-            // This targets the camera to scene origin
             camera.setTarget(BABYLON.Vector3.Zero());
-        
-            // This attaches the camera to the canvas
             camera.attachControl(canvas, true);
         
             // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
             var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-        
-            // Default intensity is 1. Let's dim the light a small amount
             light.intensity = 0.7;
         
             // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
-            var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
-        
-            // Move the sphere upward 1/2 its height
+            var sphere = BABYLON.Mesh.CreateSphere("sphere1", 6, 2, scene);
             sphere.position.y = 1;
-        
+            //添加物理
+            sphere.setPhysicsState({ impostor: BABYLON.PhysicsEngine.SphereImpostor, mass: 1 });
+
+            var sphere1 = BABYLON.Mesh.CreateSphere("sphere1", 6, 2, scene);
+            sphere1.position.x = 3
+            sphere1.position.y = 1;
+            //添加物理
+            sphere1.setPhysicsState({ impostor: BABYLON.PhysicsEngine.SphereImpostor, mass: 1 });
+
+            //连接两个物体
+            sphere.setPhysicsLinkWith(sphere1, new BABYLON.Vector3(0, 0.5, 0), new BABYLON.Vector3(0, -0.5, 0));
+
             // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
-            var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
+            var ground = BABYLON.Mesh.CreateGround("ground1", 100, 100, 2, scene);
+            //添加物理
+            ground.setPhysicsState({ impostor: BABYLON.PhysicsEngine.BoxImpostor, mass: 0, friction: 0.5, restitution: 0.7 });
         
             return scene;
-        
         };
         
         var scene = createScene();
+        //创建一个组合物理
+        // Compound
+        var part0 = BABYLON.Mesh.CreateBox("part0", 3, scene);
+        part0.position = new BABYLON.Vector3(3, 3, 0);
+
+        var part1 = BABYLON.Mesh.CreateBox("part1", 3, scene);
+        part1.parent = part0; // We need a hierarchy for compound objects
+        part1.position = new BABYLON.Vector3(0, 3, 0);
+
+        scene.createCompoundImpostor({
+            mass: 2, friction: 0.4, restitution: 0.3, parts: [
+            { mesh: part0, impostor: BABYLON.PhysicsEngine.BoxImpostor },
+            { mesh: part1, impostor: BABYLON.PhysicsEngine.BoxImpostor }]
+        });
+
+        scene.enablePhysics();
+        scene.setGravity(new BABYLON.Vector3(0, -10, 0));//设置重力
+
+
+        //When pointer down event is raised
+        scene.onPointerDown = function (evt, pickResult) {
+            //添加力
+            var pickResult = scene.pick(evt.clientX, evt.clientY);
+            console.log(pickResult);
+            if (!pickResult)
+                return;
+            var dir = pickResult.pickedPoint.subtract(scene.activeCamera.position);
+            dir.normalize();
+            console.log('pick result=' + dir);
+            pickResult.pickedMesh.applyImpulse(dir.scale(10), pickResult.pickedPoint);
+        };
 
         engine.runRenderLoop(function () {
+
             scene.render();
         });
 
